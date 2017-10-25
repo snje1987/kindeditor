@@ -1,0 +1,14 @@
+{
+    "name": "snje1987/kindeditor",
+    "type": "library",
+    "description": "kindEditor",
+    "keywords": ["kindEditor"],
+    "homepage": "https://github.com/kindsoft/kindeditor",
+    "license": "LGPL-2.1",
+    "authors": [
+        {
+            "name": "Timon Lin",
+            "role": "Developer"
+        }
+    ]
+}
