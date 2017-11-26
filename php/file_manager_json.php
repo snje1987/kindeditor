@@ -78,7 +78,8 @@ if ($handle = opendir($current_path)) {
 			$file_list[$i]['filesize'] = 0; //文件大小
 			$file_list[$i]['is_photo'] = false; //是否图片
 			$file_list[$i]['filetype'] = ''; //文件类别，用扩展名判断
-		} else {
+            $file_list[$i]['fileUrl'] = $current_url . $filename;
+        } else {
 			$file_list[$i]['is_dir'] = false;
 			$file_list[$i]['has_file'] = false;
 			$file_list[$i]['filesize'] = filesize($file);
@@ -86,7 +87,8 @@ if ($handle = opendir($current_path)) {
 			$file_ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 			$file_list[$i]['is_photo'] = in_array($file_ext, $ext_arr);
 			$file_list[$i]['filetype'] = $file_ext;
-		}
+            $file_list[$i]['fileUrl'] = $current_url . $filename;
+        }
 		$file_list[$i]['filename'] = $filename; //文件名，包含扩展名
 		$file_list[$i]['datetime'] = date('Y-m-d H:i:s', filemtime($file)); //文件最后修改时间
 		$i++;
