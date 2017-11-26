@@ -110,7 +110,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-compress');
 
-    grunt.registerTask('build', ['concat', 'uglify']);
+    grunt.registerTask('build', ['concat']);
     grunt.registerTask('zip', ['build', 'compress']);
 
     grunt.registerTask('default', 'build');
