@@ -372,6 +372,20 @@ function _mediaEmbed(attrs) {
     return html;
 }
 
+function _mediaVideo(attrs) {
+    if (typeof attrs.src !== 'undefined') {
+        if ( /\.(mp4|ogg|webm)(\?|$)/i.test(attrs.src)) {
+            var html = '<video ';
+            _each(attrs, function (key, val) {
+                html += key + '="' + val + '" ';
+            });
+            html += ' />';
+            return html;
+        }
+    }
+    return _mediaEmbed(attrs);
+}
+
 function _mediaImg(blankPath, attrs) {
     var width = attrs.width,
             height = attrs.height,
@@ -425,6 +439,7 @@ K.getAttrList = _getAttrList;
 K.mediaType = _mediaType;
 K.mediaAttrs = _mediaAttrs;
 K.mediaEmbed = _mediaEmbed;
+K.mediaVideo = _mediaVideo;
 K.mediaImg = _mediaImg;
 K.clearMsWord = _clearMsWord;
 K.tmpl = _tmpl;

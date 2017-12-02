@@ -21,13 +21,173 @@ switch ($action) {
         upload('file');
         break;
     case 'init':
+        init();
         break;
     case 'chunk':
+        chunk('file');
         break;
     case 'check':
+        check();
         break;
     default :
         alert('非法操作');
+}
+
+function init() {
+    if (isset($_POST['file_id'])) {
+        $file_path = WEB_ROOT . $_POST['file_id'];
+        $cfg_path = $file_path . '.ucfg';
+        if (!file_exists($file_path) || !file_exists($cfg_path)) {
+            alert('文件不存在');
+        }
+        $file_size = $_POST['filesize'];
+        if (filesize($file_path) != $file_size) {
+            alert('文件大小不一致');
+        }
+
+        $cfg = file($cfg_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($cfg == null || $cfg == '') {
+            echo json_encode(array('succeed' => true, 'id' => $_POST['file_id'], 'chunk' => 0));
+        } else {
+            echo json_encode(array('succeed' => true, 'id' => $_POST['file_id'], 'chunk' => intval($cfg[1])));
+        }
+    } else {
+        $file_name = $_POST['filename'];
+        $file_size = $_POST['filesize'];
+        if ($file_size > 1073741824 || $file_size < 0) {
+            alert('文件大小超过限制');
+        }
+
+        $allow = array('png', 'rar', 'zip', 'jar', 'exe', 'mp4', 'flv', 'swf', 'mp3');
+
+        $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+        if (!in_array($ext, $allow)) {
+            alert('不允许的文件类型');
+        }
+
+        $path = mkname($ext);
+        if ($path == '') {
+            alert('文件上传失败');
+        }
+
+        $dir = dirname(WEB_ROOT . $path);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        $full = WEB_ROOT . $path;
+        $dh = fopen($full, 'w+');
+        ftruncate($dh, $file_size);
+        fclose($dh);
+
+        $cfg_path = $full . '.ucfg';
+        $dh = fopen($cfg_path, 'w+');
+        fclose($dh);
+
+        echo json_encode(array('succeed' => true, 'id' => $path, 'chunk' => 0));
+    }
+}
+
+function chunk($file) {
+    $file_id = strval($_POST['file_id']);
+    $chunks = isset($_POST['chunks']) ? intval($_POST['chunks']) : 1;
+    $chunk = isset($_POST['chunk']) ? intval($_POST['chunk']) : 0;
+
+    if (!isset($_FILES) || !isset($_FILES[$file])) {
+        alert('error1');
+    }
+    $file = $_FILES[$file];
+    if ($file['error'] != UPLOAD_ERR_OK) {
+        alert('error2');
+    }
+
+    $file_path = WEB_ROOT . $file_id;
+    $cfg_path = $file_path . '.ucfg';
+    if (!file_exists($file_path) || !file_exists($cfg_path)) {
+        alert('error3');
+    }
+
+    $tmp_name = $file['tmp_name'];
+    $content = file_get_contents($tmp_name);
+    $size = strlen($content);
+    unlink($tmp_name);
+
+    $dh = fopen($file_path, 'r+');
+
+    if (flock($dh, LOCK_EX)) {
+
+        if ($chunk == $chunks - 1) {
+            fseek($dh, -1 * $size, SEEK_END);
+        } else {
+            fseek($dh, $size * $chunk, SEEK_SET);
+        }
+        fwrite($dh, $content, $size);
+
+        $cfg = file($cfg_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($cfg == null || $cfg == '') {
+            $cfg = array(
+                $chunks, 0, str_repeat('0', $chunks)
+            );
+        }
+
+        $cfg[2][$chunk] = '1';
+        $cfg[1] = strpos($cfg[2], '0', $cfg[1]);
+        if ($cfg[1] === false) {
+            $cfg[1] = $chunks;
+        }
+        file_put_contents($cfg_path, implode("\n", $cfg));
+
+        echo json_encode(array('succeed' => true));
+    } else {
+        alert('error4');
+    }
+    fclose($dh);
+}
+
+function check() {
+    $file_id = strval($_POST['file_id']);
+    $file_size = intval($_POST['filesize']);
+    $md5 = strval($_POST['md5']);
+
+    $file_path = WEB_ROOT . $file_id;
+    $cfg_path = $file_path . '.ucfg';
+    if (!file_exists($file_path) || !file_exists($cfg_path)) {
+        alert('error1');
+    }
+
+    $dh = fopen($file_path, 'r+');
+
+    if (flock($dh, LOCK_EX)) {
+
+        $cfg = file($cfg_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($cfg == null || $cfg == '') {
+            alert('error2');
+        }
+
+        if ($cfg[0] > $cfg[1]) {
+            alert('error3');
+        }
+
+        if ($file_size != filesize($file_path)) {
+            unlink($file_path);
+            unlink($cfg_path);
+            alert('error4');
+        }
+
+        $fmd5 = md5_file($file_path);
+        if ($fmd5 != $md5) {
+            unlink($file_path);
+            unlink($cfg_path);
+            alert('error5');
+        }
+
+        unlink($cfg_path);
+
+        echo json_encode(array('succeed' => true, 'url' => $file_id, 'name' => basename($file_id)));
+    } else {
+        alert('error6');
+    }
+    fclose($dh);
 }
 
 function upload($file) {
@@ -52,7 +212,7 @@ function upload($file) {
 
     $path = mkname($ext);
     if ($path == '') {
-        alert('文件上传');
+        alert('文件上传失败');
     }
 
     $dir = dirname(WEB_ROOT . $path);
@@ -64,8 +224,7 @@ function upload($file) {
         alert("上传文件失败。");
     }
 
-    header('Content-type: text/html; charset=UTF-8');
-    echo json_encode(array('error' => 0, 'url' => $path));
+    echo json_encode(array('succeed' => true, 'url' => $path));
 }
 
 function mkname($ext) {
@@ -85,7 +244,6 @@ function mkname($ext) {
 }
 
 function alert($msg) {
-    header('Content-type: text/html; charset=UTF-8');
-    echo json_encode(array('error' => 1, 'message' => $msg));
+    echo json_encode(array('succeed' => false, 'msg' => $msg));
     exit;
 }

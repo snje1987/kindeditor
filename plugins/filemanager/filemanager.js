@@ -102,15 +102,45 @@ KindEditor.plugin('filemanager', function (K) {
             } else {
                 el.click(function (e) {
                     if (confirm(lang.del_confirm)) {
-                        K.ajax(K.addParam(data.delUrl), function (data) {
+                        $.ajax({
+                            type: "GET",
+                            url: data.delUrl,
+                            cache: false,
+                            async: false,
+                            timeout: 1000,
+                            dataType: "json",
+                            success: function (data) {
+                                if (!data.succeed) {
+                                    alert(data.msg);
+                                } else {
+                                    reloadPage(dirPath, orderTypeBox.val(), createFunc);
+                                }
+                            }
                         });
-                        reloadPage(dirPath, orderTypeBox.val(), createFunc);
                     }
                 });
             }
             elList.push(el);
         }
         function bindEventResume(el, result, data, createFunc) {
+            var dirPath = encodeURIComponent(result.current_dir_path);
+            if (data.is_dir) {
+            } else {
+                el.click(function (e) {
+                    self.loadPlugin('bigfile', function () {
+                        self.plugin.bigfileDialog({
+                            action: 'resume',
+                            file_id: data.resume_id,
+                            clickFn: function (file) {
+                                reloadPage(dirPath, orderTypeBox.val(), createFunc);
+                                self.hideDialog();
+                            }
+                        });
+                    });
+                });
+            }
+            elList.push(el);
+
         }
         function createCommon(result, createFunc) {
             // remove events
@@ -166,11 +196,11 @@ KindEditor.plugin('filemanager', function (K) {
                 K(row[0].insertCell(1)).addClass('ke-cell ke-size').html(data.is_dir ? '-' : Math.ceil(data.filesize / 1024) + 'KB');
                 K(row[0].insertCell(2)).addClass('ke-cell ke-datetime').html(data.datetime);
                 if (typeof data.delUrl !== 'undefined') {
-                    var del =K(row[0].insertCell(3)).addClass('ke-cell ke-btn').html(lang.del_text);
+                    var del = K(row[0].insertCell(3)).addClass('ke-cell ke-btn').html(lang.del_text);
                     bindEventDel(del, result, data, createList);
                 }
                 if (typeof data.resume_id !== 'undefined') {
-                    var resume =K(row[0].insertCell(4)).addClass('ke-cell ke-btn').html(lang.resume_text);
+                    var resume = K(row[0].insertCell(4)).addClass('ke-cell ke-btn').html(lang.resume_text);
                     bindEventResume(resume, result, data, createList);
                 }
             }

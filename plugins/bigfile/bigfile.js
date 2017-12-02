@@ -18,6 +18,13 @@
             options.afterError = options.afterError || function (str) {
                 alert(str);
             };
+            var deepCopy = function (source) {
+                var result = {};
+                for (var key in source) {
+                    result[key] = typeof source[key] === 'object' ? deepCoyp(source[key]) : source[key];
+                }
+                return result;
+            };
             self.options = options;
             self.progressbars = {};
             // template
@@ -27,7 +34,7 @@
                 '<div class="ke-inline-block" id="ke-swfupload-button">',
                 options.selectButtonValue,
                 '</div>',
-                '<div class="ke-inline-block ke-swfupload-desc">' + options.uploadDesc + '</div>',
+                '<div class="ke-inline-block ke-swfupload-desc"></div>',
                 '<span class="ke-button-common ke-button-outer ke-swfupload-startupload">',
                 '<input type="button" class="ke-button-common ke-button" value="' + options.startButtonValue + '" />',
                 '</span>',
@@ -45,23 +52,84 @@
             var settings = {
                 swf: options.basePath + '/plugins/multiimage/images/Uploader.swf',
                 server: options.uploadUrl,
-                pick: '#ke-swfupload-button',
                 resize: false,
                 formData: options.postParams,
                 fileVal: options.filePostName,
-                compress:false
+                compress: false,
+                chunked: true,
+                chunkSize: 1048576,
+                fileNumLimit: 1,
+                pick: {
+                    id: '#ke-swfupload-button',
+                    multiple: false
+                }
             };
+            var chunk;
+            if (typeof WebUploader.Uploader.big_reg === 'undefined') {
+                WebUploader.Uploader.register({
+                    "before-send-file": "beforeSendFile", //整个文件上传前
+                    "before-send": "beforeSend", //每个分片上传前
+                }, {
+                    beforeSendFile: function (file) {
+                        var deferred = WebUploader.Deferred();
+                        var parm = deepCopy(options.postParams);
+                        parm['action'] = 'init';
+                        parm['filename'] = file.name;
+                        parm['filesize'] = file.size;
+                        if (options.action == 'resume') {
+                            parm['file_id'] = options.file_id;
+                        }
+                        $.ajax({
+                            type: "POST",
+                            url: options.uploadUrl,
+                            data: parm,
+                            cache: false,
+                            async: false,
+                            timeout: 1000,
+                            dataType: "json",
+                            success: function (data) {
+                                if (!data.succeed) {
+                                    chunk = -1;
+                                    deferred.resolve();
+                                    var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv);
+                                    showError(itemDiv, data.msg);
+                                    K('.ke-img', itemDiv).attr('data-status', 'error');
+                                } else {
+                                    file.file_id = data.id;
+                                    chunk = data.chunk;
+                                    deferred.resolve();
+                                    var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv);
+                                    K('.ke-status > div', itemDiv).hide();
+                                    K('.ke-progressbar', itemDiv).show();
+                                }
+                            }
+                        });
+                        return deferred.promise();
+                    },
+                    beforeSend: function (block) {
+                        var deferred = WebUploader.Deferred();
+                        if (chunk < 0) {
+                            self.swfu.reset();
+                        }
+                        if (block.chunk >= chunk) {
+                            deferred.resolve();
+                        } else {
+                            deferred.reject();
+                        }
+                        this.owner.options.formData.file_id = block.file.file_id;
+                        this.owner.options.formData.action = 'chunk';
+                        return deferred.promise();
+                    }
+                });
+                WebUploader.Uploader.big_reg = true;
+            }
+
             self.swfu = new WebUploader.create(settings);
             self.swfu.on('fileQueued', function (file) {
                 file.url = self.options.fileIconUrl;
                 self.appendFile(file);
             });
-            self.swfu.on('uploadStart', function (file) {
-                var self = this;
-                var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv);
-                K('.ke-status > div', itemDiv).hide();
-                K('.ke-progressbar', itemDiv).show();
-            });
+
             self.swfu.on('uploadProgress', function (file, percentage) {
                 var percent = parseInt(percentage * 100);
                 var progressbar = self.progressbars[file.id];
@@ -70,13 +138,37 @@
             });
             self.swfu.on('uploadSuccess', function (file, data) {
                 var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv).eq(0);
-                if (!data.succeed) {
-                    showError(itemDiv, self.options.errorMessage);
-                    return;
-                }
-                file.url = data.url;
-                K('.ke-img', itemDiv).attr('src', file.url).attr('data-status', 'complete').data('data', data);
-                K('.ke-status > div', itemDiv).hide();
+                K('.ke-status .ke-message', itemDiv).show();
+                K('.ke-progressbar', itemDiv).hide();
+                K('.ke-status .ke-message', itemDiv).html(self.options.checking);
+                var img = K('.ke-img', itemDiv);
+
+                self.swfu.md5File(file).then(function (val) {
+                    var parm = deepCopy(options.postParams);
+                    parm['action'] = 'check';
+                    parm['file_id'] = file.file_id;
+                    parm['filesize'] = file.size;
+                    parm['md5'] = val;
+                    $.ajax({
+                        type: "POST",
+                        url: options.uploadUrl,
+                        data: parm,
+                        cache: false,
+                        async: false,
+                        timeout: 1000,
+                        dataType: "json",
+                        success: function (data) {
+                            if (!data.succeed) {
+                                img.attr('data-status', 'error');
+                                showError(itemDiv, data.msg);
+                            } else {
+                                img.attr('data-status', 'complete').data('data', data);
+                                K('.ke-status .ke-message', itemDiv).html(self.options.succeed);
+                            }
+                            self.swfu.reset();
+                        }
+                    });
+                });
             });
             self.swfu.on('uploadError', function (file, reason) {
                 var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv).eq(0);
@@ -87,16 +179,16 @@
                 self.swfu.upload();
             });
         },
-        getUrlList: function () {
-            var list = [];
+        getFile: function () {
+            var file = {};
             K('.ke-img', self.bodyDiv).each(function () {
                 var img = K(this);
                 var status = img.attr('data-status');
                 if (status == 'complete') {
-                    list.push(img.data('data'));
+                    file = img.data('data');
                 }
             });
-            return list;
+            return file;
         },
         removeFile: function (fileId) {
             var self = this;
@@ -109,7 +201,10 @@
         removeFiles: function () {
             var self = this;
             K('.ke-item', self.bodyDiv).each(function () {
-                self.removeFile(K(this).attr('data-id'));
+                var stat = K('.ke-img', K(this)).attr('data-status');
+                if(stat == 'pending'){
+                    self.removeFile(K(this).attr('data-id'));
+                }
             });
         },
         appendFile: function (file) {
@@ -152,26 +247,23 @@
         }
     });
 
-    K.swfupload = function (element, options) {
+    K.bigupload = function (element, options) {
         return new KSWFUpload(element, options);
     };
 
 })(KindEditor);
 
-KindEditor.plugin('multiimage', function (K) {
-    var self = this, name = 'multiimage',
-            formatUploadUrl = K.undef(self.formatUploadUrl, true),
-            uploadJson = K.undef(self.uploadJson, self.basePath + 'php/upload_json.php'),
-            imgPath = self.pluginsPath + 'multiimage/images/',
-            imageSizeLimit = K.undef(self.imageSizeLimit, '1MB'),
-            imageFileTypes = K.undef(self.imageFileTypes, '*.jpg;*.gif;*.png'),
-            imageUploadLimit = K.undef(self.imageUploadLimit, 20),
-            filePostName = K.undef(self.filePostName, 'imgFile'),
-            lang = self.lang(name + '.');
+KindEditor.plugin('bigfile', function (K) {
+    var self = this;
+    var name = 'bigfile';
+    var formatUploadUrl = K.undef(self.formatUploadUrl, true);
+    var uploadJson = K.undef(self.uploadJson, self.basePath + 'php/upload_json.php');
+    var filePostName = K.undef(self.filePostName, 'imgFile');
+    var lang = self.lang(name + '.');
+    var imgPath = self.pluginsPath + 'filemanager/images/';
 
-    self.plugin.multiImageDialog = function (options) {
-        var clickFn = options.clickFn,
-                uploadDesc = K.tmpl(lang.uploadDesc, {uploadLimit: imageUploadLimit, sizeLimit: imageSizeLimit});
+    self.plugin.bigfileDialog = function (options) {
+        var clickFn = options.clickFn;
         var html = [
             '<div style="padding:20px;">',
             '<div class="swfupload">',
@@ -187,7 +279,7 @@ KindEditor.plugin('multiimage', function (K) {
             previewBtn: {
                 name: lang.insertAll,
                 click: function (e) {
-                    clickFn.call(self, swfupload.getUrlList());
+                    clickFn.call(self, swfupload.getFile());
                 }
             },
             yesBtn: {
@@ -205,54 +297,35 @@ KindEditor.plugin('multiimage', function (K) {
         }),
                 div = dialog.div;
 
-        var swfupload = K.swfupload({
+        var option = {
             container: K('.swfupload', div),
-            fileIconUrl: imgPath + 'image.png',
-            uploadDesc: uploadDesc,
+            fileIconUrl: imgPath + 'file-64.gif',
             selectButtonValue: lang.selectUpload,
             startButtonValue: lang.startUpload,
             uploadUrl: K.addParam(uploadJson, 'dir=image'),
-            flashUrl: imgPath + 'swfupload.swf',
             filePostName: filePostName,
-            fileTypes: '*.jpg;*.jpeg;*.gif;*.png;*.bmp',
-            fileTypesDesc: 'Image Files',
-            fileUploadLimit: imageUploadLimit,
-            fileSizeLimit: imageSizeLimit,
             postParams: K.undef(self.extraFileUploadParams, {}),
-            queueLimitExceeded: lang.queueLimitExceeded,
-            fileExceedsSizeLimit: lang.fileExceedsSizeLimit,
-            zeroByteFile: lang.zeroByteFile,
-            invalidFiletype: lang.invalidFiletype,
-            unknownError: lang.unknownError,
+            uploading: lang.uploading,
+            checking: lang.checking,
             pendingMessage: lang.pending,
             errorMessage: lang.uploadError,
+            succeed: lang.succeed,
             afterError: function (html) {
                 self.errorDialog(html);
             }
-        });
+        };
+
+        if (options.action == 'resume') {
+            option.file_id = options.file_id;
+            option.action = 'resume';
+        } else {
+            option.action = 'upload';
+        }
+
+        var swfupload = K.bigupload(option);
 
         return dialog;
     };
-    self.clickToolbar(name, function () {
-        self.plugin.multiImageDialog({
-            clickFn: function (urlList) {
-                if (urlList.length === 0) {
-                    return;
-                }
-                K.each(urlList, function (i, data) {
-                    if (self.afterUpload) {
-                        self.afterUpload.call(self, data.url, data, 'multiimage');
-                    }
-                    self.exec('insertimage', data.url, data.title, data.width, data.height, data.border, data.align);
-                });
-                // Bugfix: [Firefox] 上传图片后，总是出现正在加载的样式，需要延迟执行hideDialog
-                setTimeout(function () {
-                    self.hideDialog().focus();
-                }, 0);
-            }
-        });
-
-    });
     if (typeof WebUploader === 'undefined') {
         var HEAD = document.getElementsByTagName("head").item(0) || document.documentElement;
         var script = document.createElement("script");

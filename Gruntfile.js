@@ -49,7 +49,8 @@ module.exports = function (grunt) {
         'plugins/table/table.js',
         'plugins/template/template.js',
         'plugins/wordpaste/wordpaste.js',
-        'plugins/fixtoolbar/fixtoolbar.js'
+        'plugins/fixtoolbar/fixtoolbar.js',
+        'plugins/bigfile/bigfile.js'
     ];
 
     var pkg = grunt.file.readJSON('package.json');

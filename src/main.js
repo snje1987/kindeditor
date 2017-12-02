@@ -1547,7 +1547,7 @@ _plugin('core', function (K) {
                     }
                     attrs.width = _undef(imgAttrs.width, width);
                     attrs.height = _undef(imgAttrs.height, height);
-                    return _mediaEmbed(attrs);
+                    return _mediaVideo(attrs);
                 })
                 .replace(/<img[^>]*class="?ke-anchor"?[^>]*>/ig, function (full) {
                     var imgAttrs = _getAttrList(full);
@@ -1583,11 +1583,12 @@ _plugin('core', function (K) {
                 return full;
             });
         }
-        return html.replace(/<embed[^>]*type="([^"]+)"[^>]*>(?:<\/embed>)?/ig, function (full) {
+        return html.replace(/<video[^>]*[^>]*>(?:<\/video>)?/ig, function (full) {
             var attrs = _getAttrList(full);
             attrs.src = _undef(attrs.src, '');
             attrs.width = _undef(attrs.width, 0);
             attrs.height = _undef(attrs.height, 0);
+            attrs.type = 'video';
             return _mediaImg(self.themesPath + 'common/blank.gif', attrs);
         })
                 .replace(/<a[^>]*name="([^"]+)"[^>]*>(?:<\/a>)?/ig, function (full) {

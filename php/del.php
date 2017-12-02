@@ -1,4 +1,5 @@
 <?php
+
 /**
  * KindEditor PHP
  *
@@ -12,16 +13,27 @@ define('UPLOAD_DIR', 'attached');
 $path = $_GET['path'];
 
 if (strpos($path, '..') !== false) {
-    echo 'not allowed';
+    alert("非法操作");
 }
 
 if (strpos($path, '/' . UPLOAD_DIR . '/') !== 0) {
-    echo 'not allowed';
+    alert("非法操作");
 }
 
 $file = WEB_ROOT . $path;
 if (!file_exists($file)) {
-    echo 'not exists';
+    alert("文件不存在");
 }
 unlink(WEB_ROOT . $path);
-echo 'success';
+
+$cfg = $file . '.ucfg';
+if (file_exists($cfg)) {
+    unlink($cfg);
+}
+
+echo json_encode(array('succeed' => true));
+
+function alert($msg) {
+    echo json_encode(array('succeed' => false, 'msg' => $msg));
+    exit;
+}
