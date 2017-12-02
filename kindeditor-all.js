@@ -6965,6 +6965,14 @@ KindEditor.plugin('filemanager', function (K) {
                 }
                 K(row[0].insertCell(1)).addClass('ke-cell ke-size').html(data.is_dir ? '-' : Math.ceil(data.filesize / 1024) + 'KB');
                 K(row[0].insertCell(2)).addClass('ke-cell ke-datetime').html(data.datetime);
+                if (typeof data.delUrl !== 'undefined') {
+                    var del =K(row[0].insertCell(3)).addClass('ke-cell ke-btn').html(lang.del_text);
+                    bindEventDel(del, result, data, createList);
+                }
+                if (typeof data.resume_id !== 'undefined') {
+                    var resume =K(row[0].insertCell(4)).addClass('ke-cell ke-btn').html(lang.resume_text);
+                    bindEventResume(resume, result, data, createList);
+                }
             }
         }
         function createView(result) {

@@ -164,6 +164,8 @@ KindEditor.lang({
 	'filemanager.fileSize' : '大小',
 	'filemanager.fileType' : '类型',
     'filemanager.del_confirm' : '确认删除该文件？',
+    'filemanager.del_text' : '删除',
+    'filemanager.resume_text' : '续传',
 	'insertfile.url' : 'URL',
 	'insertfile.title' : '文件说明',
 	'insertfile.upload' : '上传',

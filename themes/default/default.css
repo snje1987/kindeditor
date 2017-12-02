@@ -1154,16 +1154,20 @@
 	border: 0;
 }
 .ke-plugin-filemanager-body .ke-table .ke-name {
-	width: 55%;
-	text-align: left;
+    width: 40%;
+    text-align: left;
 }
 .ke-plugin-filemanager-body .ke-table .ke-size {
-	width: 15%;
-	text-align: left;
+    width: 10%;
+    text-align: left;
 }
 .ke-plugin-filemanager-body .ke-table .ke-datetime {
 	width: 30%;
 	text-align: center;
+}
+.ke-plugin-filemanager-body .ke-table .ke-btn{
+    width: 10%;
+    text-align: center;
 }
 .webuploader-container {
     position: relative;

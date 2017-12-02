@@ -71,7 +71,7 @@ if ($handle = opendir($current_path)) {
             $file_list[$i]['filetype'] = $file_ext;
             $file_list[$i]['fileUrl'] = $current_url . $filename;
             $file_list[$i]['delUrl'] = '/php/del.php?path=' . $current_url . $filename;
-            //$file_list[$i]['resume_id'] = '';
+            $file_list[$i]['resume_id'] = '';
         }
         $file_list[$i]['filename'] = $filename; //文件名，包含扩展名
         $file_list[$i]['datetime'] = date('Y-m-d H:i:s', filemtime($file)); //文件最后修改时间
