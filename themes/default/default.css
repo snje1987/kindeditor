@@ -1108,7 +1108,28 @@
 .ke-plugin-filemanager-body .ke-photo {
 	border: 1px solid #DDDDDD;
 	background-color:#FFFFFF;
-	padding: 10px;
+    padding: 10px;
+    position:relative;
+}
+.ke-plugin-filemanager-body .ke-delete {
+    display: block;
+    background: url(default.png) no-repeat scroll 0px -688px;
+    width: 16px;
+    height: 16px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    cursor: pointer;
+}
+.ke-plugin-filemanager-body .ke-resume {
+    display: block;
+    background: url(default.png) no-repeat scroll 0px -48px;
+    width: 16px;
+    height: 16px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    cursor: pointer;
 }
 .ke-plugin-filemanager-body .ke-name {
 	width: 100px;

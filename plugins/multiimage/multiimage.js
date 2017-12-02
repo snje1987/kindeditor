@@ -233,9 +233,6 @@ KindEditor.plugin('multiimage', function (K) {
         return dialog;
     };
     self.clickToolbar(name, function () {
-        var HEAD = document.getElementsByTagName("head").item(0) || document.documentElement;
-        var script = document.createElement("script");
-        script.setAttribute("type", "text/javascript");
         var ready = function () {
             self.plugin.multiImageDialog({
                 clickFn: function (urlList) {
@@ -255,13 +252,22 @@ KindEditor.plugin('multiimage', function (K) {
                 }
             });
         };
-        script.onload = ready;
-        script.onreadystatechange = function () {
-            if (this.readyState == "loaded" || this.readyState == "complete") {
-                ready();
+        if (typeof WebUploader === 'undefined') {
+            var HEAD = document.getElementsByTagName("head").item(0) || document.documentElement;
+            var script = document.createElement("script");
+            script.setAttribute("type", "text/javascript");
+            script.onload = ready;
+            script.onreadystatechange = function () {
+                if (this.readyState == "loaded" || this.readyState == "complete") {
+                    ready();
+                }
             }
+            script.setAttribute('src', self.basePath + '/plugins/multiimage/images/webuploader.js');
+            HEAD.appendChild(script);
         }
-        script.setAttribute('src', self.basePath + '/plugins/multiimage/images/webuploader.js');
-        HEAD.appendChild(script);
+        else{
+            ready();
+        }
+
     });
 });

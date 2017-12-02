@@ -24,6 +24,8 @@
 				uploadJson : '../php/upload_json.php',
 				fileManagerJson : '../php/file_manager_json.php',
 				allowFileManager : true,
+                filePostName:'file',
+                extraFileUploadParams:{},
 				afterCreate : function() {
 					var self = this;
 					K.ctrl(document, 13, function() {
