@@ -45,7 +45,7 @@ function upload($file) {
     $tmp_name = $file['tmp_name'];
     $file_size = $file['size'];
 
-    $ext = pathinfo($file_name, PATHINFO_EXTENSION);
+    $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
     if (!in_array($ext, $allow)) {
         alert('不允许的文件类型');
     }

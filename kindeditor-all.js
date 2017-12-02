@@ -6991,15 +6991,15 @@ KindEditor.plugin('filemanager', function (K) {
                     photoDiv.attr('title', lang.emptyFolder);
                 }
                 photoDiv.append(img);
-                if (!data.is_dir) {
+                if (typeof data.delUrl !== 'undefined') {
                     var del = K('<span class="ke-delete"></span>');
                     del.appendTo(photoDiv);
                     bindEventDel(del, result, data, createView);
-                    if (typeof data.is_part !== 'undefined' && data.is_part === true) {
-                        var resume = K('<span class="ke-resume"></span>');
-                        resume.appendTo(photoDiv);
-                        bindEventResume(resume, result, data, createView);
-                    }
+                }
+                if (typeof data.resume_id !== 'undefined') {
+                    var resume = K('<span class="ke-resume"></span>');
+                    resume.appendTo(photoDiv);
+                    bindEventResume(resume, result, data, createView);
                 }
                 div.append('<div class="ke-name" title="' + data.filename + '">' + data.filename + '</div>');
             }
