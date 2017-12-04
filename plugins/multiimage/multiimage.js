@@ -70,7 +70,7 @@
             });
             self.swfu.on('uploadSuccess', function (file, data) {
                 var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv).eq(0);
-                if (!data.succeed) {
+                if (data.error != 0) {
                     showError(itemDiv, self.options.errorMessage);
                     return;
                 }

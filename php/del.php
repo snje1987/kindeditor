@@ -31,9 +31,9 @@ if (file_exists($cfg)) {
     unlink($cfg);
 }
 
-echo json_encode(array('succeed' => true));
+echo json_encode(array('error' => 0));
 
 function alert($msg) {
-    echo json_encode(array('succeed' => false, 'msg' => $msg));
+    echo json_encode(array('error' => 1, 'msg' => $msg));
     exit;
 }

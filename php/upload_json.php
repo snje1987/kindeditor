@@ -47,9 +47,9 @@ function init() {
 
         $cfg = file($cfg_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         if ($cfg == null || $cfg == '') {
-            echo json_encode(array('succeed' => true, 'id' => $_POST['file_id'], 'chunk' => 0));
+            echo json_encode(array('error' => 0, 'id' => $_POST['file_id'], 'chunk' => 0));
         } else {
-            echo json_encode(array('succeed' => true, 'id' => $_POST['file_id'], 'chunk' => intval($cfg[1])));
+            echo json_encode(array('error' => 0, 'id' => $_POST['file_id'], 'chunk' => intval($cfg[1])));
         }
     } else {
         $file_name = $_POST['filename'];
@@ -84,7 +84,7 @@ function init() {
         $dh = fopen($cfg_path, 'w+');
         fclose($dh);
 
-        echo json_encode(array('succeed' => true, 'id' => $path, 'chunk' => 0));
+        echo json_encode(array('error' => 0, 'id' => $path, 'chunk' => 0));
     }
 }
 
@@ -137,7 +137,7 @@ function chunk($file) {
         }
         file_put_contents($cfg_path, implode("\n", $cfg));
 
-        echo json_encode(array('succeed' => true));
+        echo json_encode(array('error' => 0));
     } else {
         alert('error4');
     }
@@ -157,37 +157,32 @@ function check() {
 
     $dh = fopen($file_path, 'r+');
 
-    if (flock($dh, LOCK_EX)) {
 
-        $cfg = file($cfg_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        if ($cfg == null || $cfg == '') {
-            alert('error2');
-        }
-
-        if ($cfg[0] > $cfg[1]) {
-            alert('error3');
-        }
-
-        if ($file_size != filesize($file_path)) {
-            unlink($file_path);
-            unlink($cfg_path);
-            alert('error4');
-        }
-
-        $fmd5 = md5_file($file_path);
-        if ($fmd5 != $md5) {
-            unlink($file_path);
-            unlink($cfg_path);
-            alert('error5');
-        }
-
-        unlink($cfg_path);
-
-        echo json_encode(array('succeed' => true, 'url' => $file_id, 'name' => basename($file_id)));
-    } else {
-        alert('error6');
+    $cfg = file($cfg_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($cfg == null || $cfg == '') {
+        alert('error2');
     }
-    fclose($dh);
+
+    if ($cfg[0] > $cfg[1]) {
+        alert('error3');
+    }
+
+    if ($file_size != filesize($file_path)) {
+        unlink($file_path);
+        unlink($cfg_path);
+        alert('error4');
+    }
+
+    $fmd5 = md5_file($file_path);
+    if ($fmd5 != $md5) {
+        unlink($file_path);
+        unlink($cfg_path);
+        alert('error5');
+    }
+
+    unlink($cfg_path);
+
+    echo json_encode(array('error' => 0, 'url' => $file_id, 'name' => basename($file_id)));
 }
 
 function upload($file) {
@@ -224,7 +219,7 @@ function upload($file) {
         alert("上传文件失败。");
     }
 
-    echo json_encode(array('succeed' => true, 'url' => $path));
+    echo json_encode(array('error' => 0, 'url' => $path));
 }
 
 function mkname($ext) {
@@ -244,6 +239,6 @@ function mkname($ext) {
 }
 
 function alert($msg) {
-    echo json_encode(array('succeed' => false, 'msg' => $msg));
+    echo json_encode(array('error' => 1, 'msg' => $msg));
     exit;
 }

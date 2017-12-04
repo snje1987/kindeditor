@@ -110,7 +110,7 @@ KindEditor.plugin('filemanager', function (K) {
                             timeout: 1000,
                             dataType: "json",
                             success: function (data) {
-                                if (!data.succeed) {
+                                if (data.error != 0) {
                                     alert(data.msg);
                                 } else {
                                     reloadPage(dirPath, orderTypeBox.val(), createFunc);

@@ -64,50 +64,17 @@
                     multiple: false
                 }
             };
-            var chunk;
             if (typeof WebUploader.Uploader.big_reg === 'undefined') {
                 WebUploader.Uploader.register({
-                    "before-send-file": "beforeSendFile", //整个文件上传前
-                    "before-send": "beforeSend", //每个分片上传前
+                    "before-send": "beforeSend"
                 }, {
-                    beforeSendFile: function (file) {
-                        var deferred = WebUploader.Deferred();
-                        var parm = deepCopy(options.postParams);
-                        parm['action'] = 'init';
-                        parm['filename'] = file.name;
-                        parm['filesize'] = file.size;
-                        if (options.action == 'resume') {
-                            parm['file_id'] = options.file_id;
-                        }
-                        $.ajax({
-                            type: "POST",
-                            url: options.uploadUrl,
-                            data: parm,
-                            cache: false,
-                            async: false,
-                            timeout: 1000,
-                            dataType: "json",
-                            success: function (data) {
-                                if (!data.succeed) {
-                                    chunk = -1;
-                                    deferred.resolve();
-                                    var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv);
-                                    showError(itemDiv, data.msg);
-                                    K('.ke-img', itemDiv).attr('data-status', 'error');
-                                } else {
-                                    file.file_id = data.id;
-                                    chunk = data.chunk;
-                                    deferred.resolve();
-                                    var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv);
-                                    K('.ke-status > div', itemDiv).hide();
-                                    K('.ke-progressbar', itemDiv).show();
-                                }
-                            }
-                        });
-                        return deferred.promise();
-                    },
                     beforeSend: function (block) {
                         var deferred = WebUploader.Deferred();
+                        if(typeof block.file.bchunk === 'undefined'){
+                            deferred.resolve();
+                            return deferred.promise();
+                        }
+                        var chunk = block.file.bchunk;
                         if (chunk < 0) {
                             self.swfu.reset();
                         }
@@ -123,13 +90,43 @@
                 });
                 WebUploader.Uploader.big_reg = true;
             }
-
             self.swfu = new WebUploader.create(settings);
             self.swfu.on('fileQueued', function (file) {
                 file.url = self.options.fileIconUrl;
                 self.appendFile(file);
             });
-
+            self.swfu.on('uploadStart', function (file) {
+                var parm = deepCopy(options.postParams);
+                if (options.action == 'resume') {
+                    parm['file_id'] = options.file_id;
+                }
+                parm['filename'] = file.name;
+                parm['filesize'] = file.size;
+                parm['action'] = 'init';
+                $.ajax({
+                    type: "POST",
+                    url: options.uploadUrl,
+                    data: parm,
+                    cache: false,
+                    async: false,
+                    timeout: 1000,
+                    dataType: "json",
+                    success: function (data) {
+                        if (data.error != 0) {
+                            file.bchunk = -1;
+                            var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv);
+                            showError(itemDiv, data.msg);
+                            K('.ke-img', itemDiv).attr('data-status', 'error');
+                        } else {
+                            file.file_id = data.id;
+                            file.bchunk = data.chunk;
+                            var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv);
+                            K('.ke-status > div', itemDiv).hide();
+                            K('.ke-progressbar', itemDiv).show();
+                        }
+                    }
+                });
+            });
             self.swfu.on('uploadProgress', function (file, percentage) {
                 var percent = parseInt(percentage * 100);
                 var progressbar = self.progressbars[file.id];
@@ -158,7 +155,7 @@
                         timeout: 1000,
                         dataType: "json",
                         success: function (data) {
-                            if (!data.succeed) {
+                            if (data.error != 0) {
                                 img.attr('data-status', 'error');
                                 showError(itemDiv, data.msg);
                             } else {

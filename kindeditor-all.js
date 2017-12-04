@@ -5,7 +5,7 @@
 * @author Roddy <luolonghao@gmail.com>
 * @website http://www.kindsoft.net/
 * @licence http://www.kindsoft.net/license.php
-* @version 4.1.12 (2017-12-03)
+* @version 4.1.12 (2017-12-04)
 *******************************************************************************/
 (function (window, undefined) {
 	if (window.KindEditor) {
@@ -19,7 +19,7 @@ if (!window.console) {
 if (!console.log) {
 	console.log = function () {};
 }
-var _VERSION = '4.1.12 (2017-12-03)',
+var _VERSION = '4.1.12 (2017-12-04)',
 	_ua = navigator.userAgent.toLowerCase(),
 	_IE = _ua.indexOf('msie') > -1 && _ua.indexOf('opera') == -1,
 	_NEWIE = _ua.indexOf('msie') == -1 && _ua.indexOf('trident') > -1,
@@ -6928,7 +6928,7 @@ KindEditor.plugin('filemanager', function (K) {
                             timeout: 1000,
                             dataType: "json",
                             success: function (data) {
-                                if (!data.succeed) {
+                                if (data.error != 0) {
                                     alert(data.msg);
                                 } else {
                                     reloadPage(dirPath, orderTypeBox.val(), createFunc);
@@ -7382,7 +7382,7 @@ KindEditor.plugin('image', function(K) {
 			width: 60,
 			afterUpload : function(data) {
 				dialog.hideLoading();
-				if (data.succeed) {
+				if (data.error == 0) {
 					var url = data.url;
 					if (formatUploadUrl) {
 						url = K.formatUrl(url, 'absolute');
@@ -7988,7 +7988,7 @@ KindEditor.plugin('media', function (K) {
             });
             self.swfu.on('uploadSuccess', function (file, data) {
                 var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv).eq(0);
-                if (!data.succeed) {
+                if (data.error != 0) {
                     showError(itemDiv, self.options.errorMessage);
                     return;
                 }
@@ -9192,50 +9192,17 @@ KindEditor.plugin('fixtoolbar', function (K) {
                     multiple: false
                 }
             };
-            var chunk;
             if (typeof WebUploader.Uploader.big_reg === 'undefined') {
                 WebUploader.Uploader.register({
-                    "before-send-file": "beforeSendFile",
-                    "before-send": "beforeSend",
+                    "before-send": "beforeSend"
                 }, {
-                    beforeSendFile: function (file) {
-                        var deferred = WebUploader.Deferred();
-                        var parm = deepCopy(options.postParams);
-                        parm['action'] = 'init';
-                        parm['filename'] = file.name;
-                        parm['filesize'] = file.size;
-                        if (options.action == 'resume') {
-                            parm['file_id'] = options.file_id;
-                        }
-                        $.ajax({
-                            type: "POST",
-                            url: options.uploadUrl,
-                            data: parm,
-                            cache: false,
-                            async: false,
-                            timeout: 1000,
-                            dataType: "json",
-                            success: function (data) {
-                                if (!data.succeed) {
-                                    chunk = -1;
-                                    deferred.resolve();
-                                    var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv);
-                                    showError(itemDiv, data.msg);
-                                    K('.ke-img', itemDiv).attr('data-status', 'error');
-                                } else {
-                                    file.file_id = data.id;
-                                    chunk = data.chunk;
-                                    deferred.resolve();
-                                    var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv);
-                                    K('.ke-status > div', itemDiv).hide();
-                                    K('.ke-progressbar', itemDiv).show();
-                                }
-                            }
-                        });
-                        return deferred.promise();
-                    },
                     beforeSend: function (block) {
                         var deferred = WebUploader.Deferred();
+                        if(typeof block.file.bchunk === 'undefined'){
+                            deferred.resolve();
+                            return deferred.promise();
+                        }
+                        var chunk = block.file.bchunk;
                         if (chunk < 0) {
                             self.swfu.reset();
                         }
@@ -9255,6 +9222,38 @@ KindEditor.plugin('fixtoolbar', function (K) {
             self.swfu.on('fileQueued', function (file) {
                 file.url = self.options.fileIconUrl;
                 self.appendFile(file);
+            });
+            self.swfu.on('uploadStart', function (file) {
+                var parm = deepCopy(options.postParams);
+                if (options.action == 'resume') {
+                    parm['file_id'] = options.file_id;
+                }
+                parm['filename'] = file.name;
+                parm['filesize'] = file.size;
+                parm['action'] = 'init';
+                $.ajax({
+                    type: "POST",
+                    url: options.uploadUrl,
+                    data: parm,
+                    cache: false,
+                    async: false,
+                    timeout: 1000,
+                    dataType: "json",
+                    success: function (data) {
+                        if (data.error != 0) {
+                            file.bchunk = -1;
+                            var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv);
+                            showError(itemDiv, data.msg);
+                            K('.ke-img', itemDiv).attr('data-status', 'error');
+                        } else {
+                            file.file_id = data.id;
+                            file.bchunk = data.chunk;
+                            var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv);
+                            K('.ke-status > div', itemDiv).hide();
+                            K('.ke-progressbar', itemDiv).show();
+                        }
+                    }
+                });
             });
             self.swfu.on('uploadProgress', function (file, percentage) {
                 var percent = parseInt(percentage * 100);
@@ -9283,7 +9282,7 @@ KindEditor.plugin('fixtoolbar', function (K) {
                         timeout: 1000,
                         dataType: "json",
                         success: function (data) {
-                            if (!data.succeed) {
+                            if (data.error != 0) {
                                 img.attr('data-status', 'error');
                                 showError(itemDiv, data.msg);
                             } else {
