@@ -253,11 +253,4 @@ KindEditor.plugin('multiimage', function (K) {
         });
 
     });
-    if (typeof WebUploader === 'undefined') {
-        var HEAD = document.getElementsByTagName("head").item(0) || document.documentElement;
-        var script = document.createElement("script");
-        script.setAttribute("type", "text/javascript");
-        script.setAttribute('src', self.basePath + '/plugins/multiimage/images/webuploader.js');
-        HEAD.appendChild(script);
-    }
 });

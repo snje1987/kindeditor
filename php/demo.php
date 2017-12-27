@@ -16,10 +16,10 @@
     <link rel="stylesheet" href="../themes/default/default.css" />
     <script charset="utf-8" src="../lib/jquery.min.js"></script>
     <script charset="utf-8" src="../kindeditor-all.js"></script>
-    <script charset="utf-8" src="../lang/zh-CN.js"></script>
     <script>
 		KindEditor.ready(function(K) {
 			var editor1 = K.create('textarea[name="content1"]', {
+                langType : "zh-CN",
 				cssPath : '../plugins/code/prettify.css',
 				uploadJson : '../php/upload_json.php',
 				fileManagerJson : '../php/file_manager_json.php',

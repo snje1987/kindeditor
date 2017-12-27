@@ -12,7 +12,6 @@
 			var map, geocoder;
             function initialize() {
                 map = new BMap.Map('map_canvas');
-                //var point = new BMap.Point(121.473704, 31.230393);
                 function callback(result) {
                     var cityName = result.name;
 
@@ -35,6 +34,7 @@
                         marker.setPosition(map.getCenter());
                     });
                 }
+                callback({"name":"北京"});
                 var myCity = new BMap.LocalCity();
                 myCity.get(callback);
             }

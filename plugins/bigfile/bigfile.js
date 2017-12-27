@@ -70,18 +70,24 @@
                 }, {
                     beforeSend: function (block) {
                         var deferred = WebUploader.Deferred();
-                        if(typeof block.file.bchunk === 'undefined'){
+                        if (typeof block.file.chunks === 'undefined') {
                             deferred.resolve();
                             return deferred.promise();
                         }
-                        var chunk = block.file.bchunk;
-                        if (chunk < 0) {
+                        var chunks = block.file.chunks;
+                        if (chunks === -1) {
                             self.swfu.reset();
                         }
-                        if (block.chunk >= chunk) {
+                        else if(chunks === 0){
                             deferred.resolve();
-                        } else {
-                            deferred.reject();
+                        }
+                        else{
+                            if(chunks.charAt(block.chunk) === '0'){
+                                deferred.resolve();
+                            }
+                            else{
+                                deferred.reject();
+                            }
                         }
                         this.owner.options.formData.file_id = block.file.file_id;
                         this.owner.options.formData.action = 'chunk';
@@ -113,13 +119,13 @@
                     dataType: "json",
                     success: function (data) {
                         if (data.error != 0) {
-                            file.bchunk = -1;
+                            file.chunks = -1;
                             var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv);
                             showError(itemDiv, data.msg);
                             K('.ke-img', itemDiv).attr('data-status', 'error');
                         } else {
                             file.file_id = data.id;
-                            file.bchunk = data.chunk;
+                            file.chunks = data.chunks;
                             var itemDiv = K('div[data-id="' + file.id + '"]', self.bodyDiv);
                             K('.ke-status > div', itemDiv).hide();
                             K('.ke-progressbar', itemDiv).show();
@@ -199,7 +205,7 @@
             var self = this;
             K('.ke-item', self.bodyDiv).each(function () {
                 var stat = K('.ke-img', K(this)).attr('data-status');
-                if(stat == 'pending'){
+                if (stat == 'pending') {
                     self.removeFile(K(this).attr('data-id'));
                 }
             });
@@ -323,11 +329,11 @@ KindEditor.plugin('bigfile', function (K) {
 
         return dialog;
     };
-    if (typeof WebUploader === 'undefined') {
-        var HEAD = document.getElementsByTagName("head").item(0) || document.documentElement;
-        var script = document.createElement("script");
-        script.setAttribute("type", "text/javascript");
-        script.setAttribute('src', self.basePath + '/plugins/multiimage/images/webuploader.js');
-        HEAD.appendChild(script);
-    }
 });
+if (typeof WebUploader === 'undefined') {
+    var HEAD = document.getElementsByTagName("head").item(0) || document.documentElement;
+    var script = document.createElement("script");
+    script.setAttribute("type", "text/javascript");
+    script.setAttribute('src', KindEditor.basePath + '/plugins/multiimage/images/webuploader.js');
+    HEAD.appendChild(script);
+}

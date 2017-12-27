@@ -55,7 +55,7 @@ module.exports = function (grunt) {
 
     var pkg = grunt.file.readJSON('package.json');
 
-    var lang = grunt.option('lang') || 'en';
+    var lang = grunt.option('lang') || 'zh-CN';
 
     grunt.initConfig({
         pkg: pkg,

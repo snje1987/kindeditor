@@ -47,9 +47,9 @@ function init() {
 
         $cfg = file($cfg_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         if ($cfg == null || $cfg == '') {
-            echo json_encode(array('error' => 0, 'id' => $_POST['file_id'], 'chunk' => 0));
+            echo json_encode(array('error' => 0, 'id' => $_POST['file_id'], 'chunks' => 0));
         } else {
-            echo json_encode(array('error' => 0, 'id' => $_POST['file_id'], 'chunk' => intval($cfg[1])));
+            echo json_encode(array('error' => 0, 'id' => $_POST['file_id'], 'chunks' => strval($cfg[2])));
         }
     } else {
         $file_name = $_POST['filename'];
@@ -84,7 +84,7 @@ function init() {
         $dh = fopen($cfg_path, 'w+');
         fclose($dh);
 
-        echo json_encode(array('error' => 0, 'id' => $path, 'chunk' => 0));
+        echo json_encode(array('error' => 0, 'id' => $path, 'chunks' => 0));
     }
 }
 
